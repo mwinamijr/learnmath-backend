@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = os.getenv("ALGORITHM")
 
     DATABASE_URL: str = (
-        f"postgresql://{DB_USERNAME}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        f"postgresql+psycopg2://{DB_USERNAME}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
 
     class Config:
