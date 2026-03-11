@@ -1,27 +1,37 @@
-import enum
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
-from jose import jwt
-from app.models.user import User, UserRole
+from jose import jwt, JWTError
+
 from app.config import settings
 
 
-def create_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    to_encode = {
-        key: (value.value if isinstance(value, enum.Enum) else value)
-        for key, value in to_encode.items()
-    }
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
-    expire = datetime.utcnow() + (
+    to_encode = data.copy()
+
+    expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRY_MINUTES)
     )
+
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+    return jwt.encode(
+        to_encode,
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
 
 
 def decode_access_token(token: str):
-    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    username = payload.get("sub")
-    role = UserRole(payload.get(role))
-    return {"username": username, "role": role}
+
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+
+        return payload
+
+    except JWTError:
+        return None

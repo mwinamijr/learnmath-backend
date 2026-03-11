@@ -3,7 +3,7 @@ from app.models.user import User
 from app.utils.password import verify_password
 
 
-def authenticate_user(phone: str, password: str, db: Session):
+def authenticate_user(phone_number: str, password: str, db: Session):
     """
     Authenticate a user by verifying their phone number and password.
 
@@ -15,12 +15,12 @@ def authenticate_user(phone: str, password: str, db: Session):
     Returns:
         User: The authenticated user object if successful, None otherwise.
     """
-    user = db.query(User).filter(User.phone == phone).first()
+    user = db.query(User).filter(User.phone_number == phone_number).first()
 
     if not user:
         return None
 
-    if not verify_password(password, user.password):
+    if not verify_password(password, user.hashed_password):
         return None
 
     return user

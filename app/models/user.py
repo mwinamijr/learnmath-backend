@@ -21,7 +21,7 @@ class User(Base):
     last_name = Column(String(50), nullable=True)
     email = Column(String(255), unique=True)
     phone_number = Column(String(13), unique=True, index=True)
-    password = Column(String(128))
+    hashed_password = Column(String(128))
     role = Column(Enum(UserRole), nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(
