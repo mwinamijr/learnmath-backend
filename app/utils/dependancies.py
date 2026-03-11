@@ -26,3 +26,26 @@ def get_current_user(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
+
+
+def is_admin_or_self(
+    current_user: User = Depends(get_current_user), user_id: int = None
+):
+    if current_user.role == "admin" or current_user.id == user_id:
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Access denied.",
+    )
+
+
+def is_system_not_initialized(db: Session = Depends(get_db)):
+    """
+    Ensures the initialization endpoint is only accessible when no admin exists.
+    """
+    existing_admin = db.query(User).filter(User.role == "admin").first()
+    if existing_admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="System is already initialized. Admin user exists.",
+        )
