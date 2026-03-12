@@ -13,11 +13,8 @@ from app.crud.user_crud import (
     delete_user as delete_user_crud,
 )
 
-from app.dependancies.auth_dependancies import (
-    get_current_user,
-    admin_only,
-    admin_or_self,
-)
+from app.dependancies.auth_dependancies import get_current_user
+from app.dependancies.permissions import admin_only, admin_or_self
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 

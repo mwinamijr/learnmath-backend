@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -35,8 +37,13 @@ def login(user_login: UserLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(
         data={"sub": str(user.id), "role": user.role.value}
     )
+    refresh_token = create_access_token(
+        data={"sub": str(user.id), "role": user.role.value},
+        expires_delta=timedelta(days=30),
+    )
 
     return {
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
     }

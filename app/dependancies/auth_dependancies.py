@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.utils.jwt_handler import decode_access_token
-from app.models.user import User, UserRole
+from app.models.user import User
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -46,64 +46,3 @@ def is_system_not_initialized(db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="System is already initialized. Admin user exists.",
         )
-
-
-def admin_only(current_user: User = Depends(get_current_user)):
-
-    if current_user.role != UserRole.admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required",
-        )
-
-    return current_user
-
-
-def teacher_only(current_user: User = Depends(get_current_user)):
-
-    if current_user.role != UserRole.teacher:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Teacher privileges required",
-        )
-
-    return current_user
-
-
-def student_only(current_user: User = Depends(get_current_user)):
-
-    if current_user.role != UserRole.student:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Student privileges required",
-        )
-
-    return current_user
-
-
-def admin_or_teacher(current_user: User = Depends(get_current_user)):
-
-    if current_user.role not in [UserRole.admin, UserRole.teacher]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin or Teacher privileges required",
-        )
-
-    return current_user
-
-
-def admin_or_self(
-    user_id: str,
-    current_user: User = Depends(get_current_user),
-):
-
-    if current_user.role == UserRole.admin:
-        return current_user
-
-    if str(current_user.id) == str(user_id):
-        return current_user
-
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Only admin or the account owner can perform this action",
-    )
