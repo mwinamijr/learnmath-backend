@@ -19,7 +19,7 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False)
     first_name = Column(String(50), nullable=True)
     last_name = Column(String(50), nullable=True)
-    email = Column(String(255), unique=True)
+    email = Column(String(255), unique=True, nullable=True)
     phone_number = Column(String(13), unique=True, index=True)
     hashed_password = Column(String(128))
     role = Column(Enum(UserRole), nullable=False)

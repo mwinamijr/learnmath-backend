@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.user_schemas import UserCreate, UserResponse, UserUpdate
 from app.crud.user_crud import (
     get_all_users,
@@ -55,6 +55,7 @@ def create_admin_user(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_only),
 ):
+    user.role = UserRole.admin
 
     return create_user(db, user)
 

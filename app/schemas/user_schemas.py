@@ -1,23 +1,40 @@
+import re
 from enum import Enum
-from pydantic import BaseModel, EmailStr, constr
+from pydantic import BaseModel, EmailStr, constr, field_validator
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
 
-
-class UserRole(str, Enum):
-    admin = "admin"
-    teacher = "teacher"
-    student = "student"
+from app.models.user import UserRole
 
 
 class UserBase(BaseModel):
-    username: constr(min_length=5, max_length=50)
-    email: EmailStr
-    phone_number: constr(min_length=10, max_length=13)
+    username: constr(min_length=4, max_length=50)
+    email: Optional[EmailStr] = None
+    phone_number: str
     first_name: Optional[constr(max_length=50)] = None
     last_name: Optional[constr(max_length=50)] = None
     role: UserRole
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def empty_email_to_none(cls, v):
+        if v == "":
+            return None
+        return v
+
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone_number(cls, v):
+
+        pattern = r"^\+255\d{9}$"
+
+        if not re.match(pattern, v):
+            raise ValueError(
+                "Phone number must be in international format like +255625799380"
+            )
+
+        return v
 
 
 class UserCreate(UserBase):
