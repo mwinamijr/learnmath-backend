@@ -4,7 +4,7 @@ from typing import Literal, Optional
 from uuid import UUID
 from datetime import datetime
 
-from app.models.user import UserRole
+from app.models.user import TeacherCategory, UserRole
 
 
 class UserBase(BaseModel):
@@ -38,14 +38,11 @@ class UserBase(BaseModel):
 
 class AdminUserCreate(UserBase):
     password: str
-    role: UserRole = UserRole.admin
+    role: UserRole
 
 
-class RegisterUser(BaseModel):
-    username: str
+class RegisterUser(UserBase):
     password: str
-    phone_number: str
-    email: Optional[EmailStr] = None
     role: Literal["student", "teacher"]
 
 
@@ -61,6 +58,7 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: UUID
+    teacher_category: Optional[TeacherCategory] = None
     is_active: bool
     created_at: datetime
 

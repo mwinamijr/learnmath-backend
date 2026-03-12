@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from typing import Union
 from uuid import UUID
 
-from app.models.user import User
+from app.models.user import User, UserRole, TeacherCategory
 from app.schemas.user_schemas import AdminUserCreate, RegisterUser, UserUpdate
 from app.utils.password import hash_password
 
@@ -21,6 +21,11 @@ def create_user(db: Session, user: Union[AdminUserCreate, RegisterUser]):
     if db.query(User).filter(User.phone_number == user.phone_number).first():
         raise HTTPException(status_code=400, detail="Phone number already exists.")
 
+    if user.role == UserRole.teacher:
+        teacher_category = TeacherCategory.pending
+    else:
+        teacher_category = None
+
     new_user = User(
         username=user.username,
         email=user.email,
@@ -29,6 +34,7 @@ def create_user(db: Session, user: Union[AdminUserCreate, RegisterUser]):
         last_name=getattr(user, "last_name", None),
         hashed_password=hash_password(user.password),
         role=user.role,
+        teacher_category=teacher_category,
     )
 
     db.add(new_user)

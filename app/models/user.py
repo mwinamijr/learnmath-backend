@@ -12,6 +12,15 @@ class UserRole(enum.Enum):
     student = "student"
 
 
+class TeacherCategory(enum.Enum):
+    pending = "pending"  # joined, not yet approved
+    approved = "approved"  # verified teacher
+    starter = "starter"  # teacher with some courses, but not yet popular
+    paid_courses = "paid_courses"  # teacher has paid courses but not yet popular
+    popular = "popular"  # high-reputation teacher
+    vip = "vip"  # optional, high-reputation
+
+
 class User(Base):
     __tablename__ = "users"
 

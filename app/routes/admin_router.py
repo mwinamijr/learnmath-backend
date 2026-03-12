@@ -43,3 +43,28 @@ def create_admin_user(
 ):
     user.role = UserRole.admin
     return create_user(db, user)
+
+
+@router.post("{user_id}/approve-teacher/", response_model=UserResponse)
+def approve_teacher(
+    user_id: str,
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_only),
+):
+
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.role != UserRole.teacher:
+        raise HTTPException(status_code=400, detail="User is not a teacher")
+
+    if user.teacher_category != "pending":
+        raise HTTPException(status_code=400, detail="Teacher is not pending approval")
+
+    user.teacher_category = "approved"
+    db.commit()
+    db.refresh(user)
+
+    return user
