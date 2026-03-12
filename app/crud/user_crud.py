@@ -1,20 +1,22 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.query import Query
 from fastapi import HTTPException
+from typing import Union
 from uuid import UUID
 
 from app.models.user import User
-from app.schemas.user_schemas import UserCreate, UserUpdate
+from app.schemas.user_schemas import AdminUserCreate, RegisterUser, UserUpdate
 from app.utils.password import hash_password
 
 
-def create_user(db: Session, user: UserCreate):
+def create_user(db: Session, user: Union[AdminUserCreate, RegisterUser]):
 
     if db.query(User).filter(User.username == user.username).first():
         raise HTTPException(status_code=400, detail="Username already taken.")
 
-    if db.query(User).filter(User.email == user.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered.")
+    if user.email:
+        if db.query(User).filter(User.email == user.email).first():
+            raise HTTPException(status_code=400, detail="Email already registered.")
 
     if db.query(User).filter(User.phone_number == user.phone_number).first():
         raise HTTPException(status_code=400, detail="Phone number already exists.")
@@ -23,8 +25,8 @@ def create_user(db: Session, user: UserCreate):
         username=user.username,
         email=user.email,
         phone_number=user.phone_number,
-        first_name=user.first_name,
-        last_name=user.last_name,
+        first_name=getattr(user, "first_name", None),
+        last_name=getattr(user, "last_name", None),
         hashed_password=hash_password(user.password),
         role=user.role,
     )

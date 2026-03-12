@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import UserRole
-from app.schemas.user_schemas import UserCreate, UserLogin, Token, UserResponse
+from app.schemas.user_schemas import RegisterUser, UserLogin, Token, UserResponse
 from app.crud.user_crud import create_user
 from app.utils.jwt_handler import create_access_token
 from app.utils.auth import authenticate_user
@@ -15,12 +15,7 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
 @router.post("/register", response_model=UserResponse)
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    if user.role == UserRole.admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot register as admin. Contact support.",
-        )
+def register_user(user: RegisterUser, db: Session = Depends(get_db)):
 
     return create_user(db, user)
 

@@ -3,12 +3,11 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.user import User, UserRole
-from app.schemas.user_schemas import UserCreate, UserResponse, UserUpdate
+from app.models.user import User
+from app.schemas.user_schemas import UserResponse, UserUpdate
 from app.crud.user_crud import (
     get_all_users,
     get_user_by_id,
-    create_user,
     update_user as update_user_crud,
     delete_user as delete_user_crud,
 )
@@ -47,17 +46,6 @@ def get_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
-
-
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_admin_user(
-    user: UserCreate,
-    db: Session = Depends(get_db),
-    admin: User = Depends(admin_only),
-):
-    user.role = UserRole.admin
-
-    return create_user(db, user)
 
 
 @router.put("/{user_id}", response_model=UserResponse)

@@ -1,7 +1,6 @@
 import re
-from enum import Enum
 from pydantic import BaseModel, EmailStr, constr, field_validator
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 from datetime import datetime
 
@@ -31,14 +30,23 @@ class UserBase(BaseModel):
 
         if not re.match(pattern, v):
             raise ValueError(
-                "Phone number must be in international format like +255625799380"
+                "Phone number must be in international format like +255XXXXXXXXX"
             )
 
         return v
 
 
-class UserCreate(UserBase):
-    password: constr(min_length=8, max_length=128)
+class AdminUserCreate(UserBase):
+    password: str
+    role: UserRole = UserRole.admin
+
+
+class RegisterUser(BaseModel):
+    username: str
+    password: str
+    phone_number: str
+    email: Optional[EmailStr] = None
+    role: Literal["student", "teacher"]
 
 
 class UserUpdate(BaseModel):
