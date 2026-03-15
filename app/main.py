@@ -1,6 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import admin_router, auth_router, user_router
+from app.routes.lesson import (
+    subject_router,
+    topic_router,
+    sub_topic_router,
+    lesson_router,
+)
 
 
 # Initialize app
@@ -21,6 +27,10 @@ app.add_middleware(
 app.include_router(admin_router.router)
 app.include_router(auth_router.router)
 app.include_router(user_router.router)
+app.include_router(subject_router.router)
+app.include_router(topic_router.router)
+app.include_router(sub_topic_router.router)
+app.include_router(lesson_router.router)
 
 
 @app.get("/")
