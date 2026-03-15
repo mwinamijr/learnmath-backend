@@ -14,6 +14,7 @@ class UserBase(BaseModel):
     first_name: Optional[constr(max_length=50)] = None
     last_name: Optional[constr(max_length=50)] = None
     role: UserRole
+    teacher_category: TeacherCategory
 
     @field_validator("email", mode="before")
     @classmethod
@@ -53,6 +54,7 @@ class UserUpdate(BaseModel):
     phone_number: Optional[constr(min_length=10, max_length=13)] = None
     email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
+    teacher_category: Optional[TeacherCategory] = None
     is_active: Optional[bool] = None
 
 

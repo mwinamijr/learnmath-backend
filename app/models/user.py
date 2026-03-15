@@ -1,6 +1,15 @@
 import uuid
 import enum
-from sqlalchemy import Column, String, Boolean, Enum, TIMESTAMP, text
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    Enum,
+    ForeignKey,
+    TIMESTAMP,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database import Base
@@ -32,7 +41,19 @@ class User(Base):
     phone_number = Column(String(13), unique=True, index=True)
     hashed_password = Column(String(128))
     role = Column(Enum(UserRole), nullable=False)
+    teacher_category = Column(Enum(TeacherCategory), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=text("now()"), nullable=False
     )
+
+
+class Profile(Base):
+    __tablename__ = "profiles"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(ForeignKey("users.id"), nullable=False)
+    bio = Column(String(500), nullable=True)
+    age = Column(Integer, nullable=True)
+    grade = Column(String(10), nullable=True)
+    avatar = Column(String(255), nullable=True)
