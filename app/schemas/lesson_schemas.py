@@ -98,3 +98,47 @@ class LessonResponse(LessonBase):
 
     class Config:
         from_attributes = True
+
+
+class InteractiveContentBase(BaseModel):
+    lesson_id: UUID
+    content_type: str
+    content_data: str
+
+
+class InteractiveLessonCreate(InteractiveContentBase):
+    pass
+
+
+class InteractiveLessonUpdate(InteractiveContentBase):
+    content_type: Optional[str] = None
+    content_data: Optional[str] = None
+
+
+class InteractiveLessonResponse(InteractiveContentBase):
+    id: UUID
+
+    class Config:
+        from_attributes = True
+
+
+class LessonContentBase(BaseModel):
+    lesson_id: UUID
+    content_type: str
+    content_data: str
+
+
+class LessonContentCreate(LessonContentBase):
+    pass
+
+
+class LessonContentUpdate(LessonContentBase):
+    content_type: Optional[str] = None
+    content_data: Optional[str] = None
+
+
+class LessonContentResponse(LessonContentBase):
+    id: UUID
+
+    class Config:
+        from_attributes = True

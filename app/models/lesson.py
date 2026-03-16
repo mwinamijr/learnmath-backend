@@ -84,12 +84,10 @@ class Subject(Base):
     __tablename__ = "subjects"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
     name = Column(
         String(255),
         nullable=False,
     )
-
     grade_level = Column(
         Enum(GradeLevel),
         nullable=False,
@@ -117,23 +115,19 @@ class Topic(Base):
         ForeignKey("subjects.id", ondelete="CASCADE"),
         nullable=False,
     )
-
     class_level = Column(
         Integer,
         nullable=False,
     )
-
     name = Column(
         String(255),
         nullable=False,
     )
-
     order_index = Column(
         Integer,
         default=0,
         nullable=False,
     )
-
     description = Column(
         Text,
         nullable=True,
@@ -155,18 +149,15 @@ class Subtopic(Base):
     __tablename__ = "subtopics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
     topic_id = Column(
         UUID(as_uuid=True),
         ForeignKey("topics.id", ondelete="CASCADE"),
         nullable=False,
     )
-
     name = Column(
         String(255),
         nullable=False,
     )
-
     order_index = Column(
         Integer,
         default=0,
@@ -191,46 +182,38 @@ class Lesson(Base):
     __tablename__ = "lessons"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
     subtopic_id = Column(
         UUID(as_uuid=True),
         ForeignKey("subtopics.id", ondelete="CASCADE"),
         nullable=False,
     )
-
     name = Column(
         String(255),
         nullable=False,
     )
-
     description = Column(
         Text,
         nullable=True,
     )
-
     order_index = Column(
         Integer,
         default=0,
         nullable=False,
     )
-
     lesson_type = Column(
         Enum(LessonType),
         default=LessonType.read,
         nullable=False,
     )
-
     difficulty = Column(
         Enum(DifficultyLevel),
         default=DifficultyLevel.easy,
         nullable=False,
     )
-
     estimated_minutes = Column(
         Integer,
         nullable=True,
     )
-
     created_at = Column(
         TIMESTAMP(timezone=True),
         server_default=text("now()"),
