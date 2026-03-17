@@ -1,5 +1,4 @@
 import uuid
-import enum
 from sqlalchemy import (
     Column,
     Integer,
@@ -10,9 +9,10 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship, validates
 
 from app.db.database import Base
-from app.db.enums import user_role_enum, teacher_category_enum
+from app.db.enums import UserRole, TeacherCategory
 
 
 class User(Base):
@@ -25,12 +25,24 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=True)
     phone_number = Column(String(13), unique=True, index=True)
     hashed_password = Column(String(128))
-    role = Column(user_role_enum, nullable=False)
-    teacher_category = Column(teacher_category_enum, nullable=True)
+    role = Column(String(50), nullable=False)
+    teacher_category = Column(String(50), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=text("now()"), nullable=False
     )
+
+    @validates("role")
+    def validate_role(self, key, value):
+        if value not in UserRole.__members__:
+            raise ValueError(f"Invalid role: {value}")
+        return value
+
+    @validates("teacher_category")
+    def validate_teacher_category(self, key, value):
+        if value is not None and value not in TeacherCategory.__members__:
+            raise ValueError(f"Invalid teacher category: {value}")
+        return value
 
 
 class Profile(Base):

@@ -12,10 +12,10 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 
 from app.db.database import Base
-from app.db.enums import lesson_type_enum, difficulty_level_enum, grade_level_enum
+from app.db.enums import LessonType, DifficultyLevel, GradeLevel
 
 
 class Subject(Base):
@@ -36,7 +36,7 @@ class Subject(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     name = Column(String(255), nullable=False)
-    grade_level = Column(grade_level_enum, nullable=False)
+    grade_level = Column(String(50), nullable=False)
 
     # RELATIONSHIPS
     topics = relationship(
@@ -50,6 +50,12 @@ class Subject(Base):
         UniqueConstraint("name", "grade_level", name="uq_subject_name_grade"),
         Index("idx_subject_grade", "grade_level"),
     )
+
+    @validates("grade_level")
+    def validate_grade_level(self, key, value):
+        if value is not None and value not in GradeLevel.__members__:
+            raise ValueError(f"Invalid grade level: {value}")
+        return value
 
 
 class Topic(Base):
@@ -168,8 +174,8 @@ class Lesson(Base):
 
     order_index = Column(Integer, default=0, nullable=False)
 
-    lesson_type = Column(lesson_type_enum, nullable=False)
-    difficulty = Column(difficulty_level_enum, nullable=False)
+    lesson_type = Column(String(50), nullable=False)
+    difficulty = Column(String(50), nullable=False)
 
     estimated_minutes = Column(Integer)
 
@@ -201,6 +207,18 @@ class Lesson(Base):
         Index("idx_lesson_type", "lesson_type"),
         Index("idx_lesson_difficulty", "difficulty"),
     )
+
+    @validates("lesson_type")
+    def validate_lesson_type(self, key, value):
+        if value is not None and value not in LessonType.__members__:
+            raise ValueError(f"Invalid lesson type: {value}")
+        return value
+
+    @validates("difficulty")
+    def validate_difficulty(self, key, value):
+        if value is not None and value not in DifficultyLevel.__members__:
+            raise ValueError(f"Invalid difficulty level: {value}")
+        return value
 
 
 class InteractiveLessonVisual(Base):

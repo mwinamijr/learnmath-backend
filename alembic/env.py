@@ -5,23 +5,8 @@ from sqlalchemy import pool
 
 from alembic import context
 from app.db.database import Base
-from app.db.enums import (
-    lesson_type_enum,
-    difficulty_level_enum,
-    grade_level_enum,
-    user_role_enum,
-    teacher_category_enum,
-)
 from app.config import settings
 from app.models.user import User, Profile
-from app.models.lesson import (
-    Subject,
-    Topic,
-    Subtopic,
-    Lesson,
-    LessonContent,
-    InteractiveLessonVisual,
-)
 
 # from app.models.exercise import Exercise, ExerciseAttempt
 # from app.models.progress import LessonProgress, TopicProgress, Streak, Leaderboard
@@ -48,29 +33,19 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-from alembic.autogenerate import renderers
-
-
-@renderers.dispatch_for("type")
-def render_type(autogen_type, autogen_context):
-    """
-    This prevents Alembic from generating inline ENUMs
-    and instead references our pre-defined ENUMs.
-    """
-    enum_name = str(autogen_type)
-    if enum_name in (
-        "lessontype",
-        "difficultylevel",
-        "gradelevel",
-        "userrole",
-        "teachercategory",
-    ):
-        # just render the ENUM type name in SQL
-        return enum_name
-    return None  # fallback to default rendering
-
 
 def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
+    """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -84,6 +59,12 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -91,16 +72,6 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        # Make sure enums exist BEFORE using them in tables
-        for enum_type in (
-            lesson_type_enum,
-            difficulty_level_enum,
-            grade_level_enum,
-            user_role_enum,
-            teacher_category_enum,
-        ):
-            enum_type.create(connection, checkfirst=True)
-
         context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
