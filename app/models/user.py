@@ -5,29 +5,14 @@ from sqlalchemy import (
     Integer,
     String,
     Boolean,
-    Enum,
     ForeignKey,
     TIMESTAMP,
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 
-from app.database import Base
-
-
-class UserRole(enum.Enum):
-    admin = "admin"
-    teacher = "teacher"
-    student = "student"
-
-
-class TeacherCategory(enum.Enum):
-    pending = "pending"  # joined, not yet approved
-    approved = "approved"  # verified teacher
-    starter = "starter"  # teacher with some courses, but not yet popular
-    paid_courses = "paid_courses"  # teacher has paid courses but not yet popular
-    popular = "popular"  # high-reputation teacher
-    vip = "vip"  # optional, high-reputation
+from app.db.database import Base
+from app.db.enums import user_role_enum, teacher_category_enum
 
 
 class User(Base):
@@ -40,8 +25,8 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=True)
     phone_number = Column(String(13), unique=True, index=True)
     hashed_password = Column(String(128))
-    role = Column(Enum(UserRole), nullable=False)
-    teacher_category = Column(Enum(TeacherCategory), nullable=True)
+    role = Column(user_role_enum, nullable=False)
+    teacher_category = Column(teacher_category_enum, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=text("now()"), nullable=False

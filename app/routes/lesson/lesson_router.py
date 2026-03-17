@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.db.database import get_db
 from app.schemas.lesson_schemas import (
     LessonCreate,
     LessonUpdate,

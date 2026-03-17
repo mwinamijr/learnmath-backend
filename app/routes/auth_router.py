@@ -3,7 +3,7 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.db.database import get_db
 from app.models.user import TeacherCategory, UserRole
 from app.schemas.user_schemas import RegisterUser, UserLogin, Token, UserResponse
 from app.crud.user_crud import create_user

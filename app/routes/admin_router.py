@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.db.database import get_db
 from app.config import settings
 from app.dependancies.permissions import admin_only
 from app.models.user import User, UserRole

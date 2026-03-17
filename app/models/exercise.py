@@ -8,14 +8,15 @@ from sqlalchemy import (
     String,
     Integer,
     ForeignKey,
-    TIMESTAMP,
     Text,
-    text,
+    Index,
+    UniqueConstraint,
 )
 
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import relationship
 
-from app.database import Base
+from app.db.database import Base
 from app.models.lesson import DifficultyLevel
 
 
@@ -38,22 +39,60 @@ class QuestionType(enum.Enum):
     interactive = "interactive"
 
 
+class Question(Base):
+    """
+    Central reusable question bank.
+
+    A single question can be used in:
+    - exercises
+    - quizzes
+    - exams
+
+    Supports all formats via JSONB.
+    """
+
+    __tablename__ = "questions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    lesson_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("lessons.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    question_text = Column(Text, nullable=False)
+
+    question_type = Column(
+        Enum(QuestionType),
+        nullable=False,
+    )
+
+    data = Column(JSONB, nullable=False)
+    # contains options, drag config, pixi JSON etc
+
+    correct_answer = Column(JSONB, nullable=False)
+
+    difficulty = Column(
+        Enum(DifficultyLevel),
+        nullable=False,
+    )
+
+    points = Column(Integer, default=1, nullable=False)
+
+    # INDEXES
+    __table_args__ = (
+        Index("idx_question_lesson", "lesson_id"),
+        Index("idx_question_difficulty", "difficulty"),
+    )
+
+
 class Exercise(Base):
     """
-    Represents a single exercise belonging to a lesson.
+    Practice set inside a lesson.
 
-    Each exercise contains:
-    - The question text
-    - The type of interaction required
-    - The correct answer stored as JSON
-    - Visual configuration for rendering the exercise
-    - Difficulty level inherited from the lesson system
-
-    The `correct_answer` field is stored as JSONB so that it can support
-    multiple answer structures such as:
-        - simple numeric answers
-        - multiple choice options
-        - drag-and-drop configurations
+    Contains multiple questions.
+    Not timed.
     """
 
     __tablename__ = "exercises"
@@ -66,54 +105,53 @@ class Exercise(Base):
         nullable=False,
     )
 
-    question_text = Column(Text, nullable=False)
+    title = Column(String(255), nullable=False)
 
-    question_type = Column(
-        Enum(QuestionType),
-        nullable=False,
-    )
+    difficulty = Column(Enum(DifficultyLevel), nullable=False)
 
-    correct_answer = Column(
-        JSONB,
-        nullable=False,
-    )
+    # RELATION
+    questions = relationship("ExerciseQuestion", back_populates="exercise")
 
-    visual_type = Column(
-        String(255),
-        nullable=True,
-    )
-
-    difficulty = Column(
-        Enum(DifficultyLevel),
-        nullable=False,
-    )
+    __table_args__ = (Index("idx_exercise_lesson", "lesson_id"),)
 
 
-class ExerciseAttempt(Base):
+class Exercise(Base):
     """
-    Tracks a student's attempt at solving a specific exercise.
+    Practice set inside a lesson.
 
-    This table stores:
-    - The answer submitted by the student
-    - Whether the answer was correct
-    - Score awarded
-    - Time taken to answer
-
-    This enables analytics such as:
-    - accuracy rates
-    - average solving time
-    - difficulty tuning
+    Contains multiple questions.
+    Not timed.
     """
 
-    __tablename__ = "exercise_attempts"
+    __tablename__ = "exercises"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    user_id = Column(
+    lesson_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("lessons.id", ondelete="CASCADE"),
         nullable=False,
     )
+
+    title = Column(String(255), nullable=False)
+
+    difficulty = Column(Enum(DifficultyLevel), nullable=False)
+
+    # RELATION
+    questions = relationship("ExerciseQuestion", back_populates="exercise")
+
+    __table_args__ = (Index("idx_exercise_lesson", "lesson_id"),)
+
+
+class ExerciseQuestion(Base):
+    """
+    Links questions to an exercise.
+    Allows ordering.
+    """
+
+    __tablename__ = "exercise_questions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     exercise_id = Column(
         UUID(as_uuid=True),
@@ -121,30 +159,84 @@ class ExerciseAttempt(Base):
         nullable=False,
     )
 
-    answer = Column(
-        JSONB,
+    question_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("questions.id", ondelete="CASCADE"),
         nullable=False,
     )
 
-    is_correct = Column(
-        Boolean,
-        default=False,
-        nullable=False,
-    )
+    order_index = Column(Integer, default=0)
 
-    score = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
+    # RELATIONSHIPS
+    exercise = relationship("Exercise", back_populates="questions")
+    question = relationship("Question")
 
-    time_taken = Column(
-        Integer,
-        nullable=True,
-    )
+    __table_args__ = (UniqueConstraint("exercise_id", "question_id"),)
 
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=text("now()"),
-        nullable=False,
-    )
+
+class Quiz(Base):
+    """
+    Short assessment (not strictly timed).
+    """
+
+    __tablename__ = "quizzes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    lesson_id = Column(UUID(as_uuid=True), ForeignKey("lessons.id"))
+
+    title = Column(String(255), nullable=False)
+
+    total_marks = Column(Integer, default=0)
+
+    time_limit = Column(Integer)  # optional (seconds)
+
+    __table_args__ = (Index("idx_quiz_lesson", "lesson_id"),)
+
+
+class Exam(Base):
+    """
+    Formal timed exam.
+
+    Example:
+    - Midterm
+    - Final exam
+    """
+
+    __tablename__ = "exams"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    title = Column(String(255), nullable=False)
+
+    total_marks = Column(Integer, nullable=False)
+
+    duration_minutes = Column(Integer, nullable=False)
+
+    is_active = Column(Boolean, default=True)
+
+    __table_args__ = (Index("idx_exam_active", "is_active"),)
+
+
+class Exam(Base):
+    """
+    Formal timed exam.
+
+    Example:
+    - Midterm
+    - Final exam
+    """
+
+    __tablename__ = "exams"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    title = Column(String(255), nullable=False)
+
+    total_marks = Column(Integer, nullable=False)
+
+    duration_minutes = Column(Integer, nullable=False)
+
+    is_active = Column(Boolean, default=True)
+
+    __table_args__ = (Index("idx_exam_active", "is_active"),)

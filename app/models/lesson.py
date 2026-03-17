@@ -1,71 +1,21 @@
 import uuid
-import enum
 
-from sqlalchemy import Column, Enum, String, Integer, ForeignKey, TIMESTAMP, Text, text
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    ForeignKey,
+    TIMESTAMP,
+    Text,
+    text,
+    Index,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import relationship
 
-from app.database import Base
-
-
-class GradeLevel(enum.Enum):
-    """
-    Represents the education level the subject belongs to.
-
-    primary:
-        Primary school level mathematics.
-
-    o_level:
-        Secondary school (Ordinary level).
-
-    a_level:
-        Advanced secondary school mathematics.
-    """
-
-    primary = "primary"
-    o_level = "o-level"
-    a_level = "a-level"
-
-
-class LessonType(enum.Enum):
-    """
-    Defines the format used to deliver a lesson.
-
-    video:
-        Lesson is presented through video explanation.
-
-    interactive:
-        Lesson uses visual objects and interaction.
-
-    game:
-        Lesson is delivered as a math mini-game.
-
-    read:
-        Lesson is text-based explanation with diagrams.
-    """
-
-    video = "video"
-    interactive = "interactive"
-    game = "game"
-    read = "read"
-
-
-class DifficultyLevel(enum.Enum):
-    """
-    Represents the difficulty level of a lesson or exercise.
-
-    easy:
-        Beginner-level problems.
-
-    intermediate:
-        Medium difficulty problems.
-
-    hard:
-        Advanced or challenging problems.
-    """
-
-    easy = "easy"
-    intermediate = "intermediate"
-    hard = "hard"
+from app.db.database import Base
+from app.db.enums import lesson_type_enum, difficulty_level_enum, grade_level_enum
 
 
 class Subject(Base):
@@ -84,13 +34,21 @@ class Subject(Base):
     __tablename__ = "subjects"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(
-        String(255),
-        nullable=False,
+
+    name = Column(String(255), nullable=False)
+    grade_level = Column(grade_level_enum, nullable=False)
+
+    # RELATIONSHIPS
+    topics = relationship(
+        "Topic",
+        back_populates="subject",
+        cascade="all, delete-orphan",
     )
-    grade_level = Column(
-        Enum(GradeLevel),
-        nullable=False,
+
+    # CONSTRAINTS + INDEXES
+    __table_args__ = (
+        UniqueConstraint("name", "grade_level", name="uq_subject_name_grade"),
+        Index("idx_subject_grade", "grade_level"),
     )
 
 
@@ -115,22 +73,28 @@ class Topic(Base):
         ForeignKey("subjects.id", ondelete="CASCADE"),
         nullable=False,
     )
-    class_level = Column(
-        Integer,
-        nullable=False,
+
+    class_level = Column(Integer, nullable=False)
+    name = Column(String(255), nullable=False)
+    order_index = Column(Integer, default=0, nullable=False)
+    description = Column(Text)
+
+    # RELATIONSHIPS
+    subject = relationship("Subject", back_populates="topics")
+
+    subtopics = relationship(
+        "Subtopic",
+        back_populates="topic",
+        cascade="all, delete-orphan",
     )
-    name = Column(
-        String(255),
-        nullable=False,
-    )
-    order_index = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-    description = Column(
-        Text,
-        nullable=True,
+
+    # CONSTRAINTS + INDEXES
+    __table_args__ = (
+        UniqueConstraint(
+            "subject_id", "class_level", "name", name="uq_topic_per_class"
+        ),
+        Index("idx_topic_subject", "subject_id"),
+        Index("idx_topic_class_level", "class_level"),
     )
 
 
@@ -149,19 +113,29 @@ class Subtopic(Base):
     __tablename__ = "subtopics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
     topic_id = Column(
         UUID(as_uuid=True),
         ForeignKey("topics.id", ondelete="CASCADE"),
         nullable=False,
     )
-    name = Column(
-        String(255),
-        nullable=False,
+
+    name = Column(String(255), nullable=False)
+    order_index = Column(Integer, default=0, nullable=False)
+
+    # RELATIONSHIPS
+    topic = relationship("Topic", back_populates="subtopics")
+
+    lessons = relationship(
+        "Lesson",
+        back_populates="subtopic",
+        cascade="all, delete-orphan",
     )
-    order_index = Column(
-        Integer,
-        default=0,
-        nullable=False,
+
+    # CONSTRAINTS + INDEXES
+    __table_args__ = (
+        UniqueConstraint("topic_id", "name", name="uq_subtopic_name"),
+        Index("idx_subtopic_topic", "topic_id"),
     )
 
 
@@ -182,42 +156,50 @@ class Lesson(Base):
     __tablename__ = "lessons"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
     subtopic_id = Column(
         UUID(as_uuid=True),
         ForeignKey("subtopics.id", ondelete="CASCADE"),
         nullable=False,
     )
-    name = Column(
-        String(255),
-        nullable=False,
-    )
-    description = Column(
-        Text,
-        nullable=True,
-    )
-    order_index = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-    lesson_type = Column(
-        Enum(LessonType),
-        default=LessonType.read,
-        nullable=False,
-    )
-    difficulty = Column(
-        Enum(DifficultyLevel),
-        default=DifficultyLevel.easy,
-        nullable=False,
-    )
-    estimated_minutes = Column(
-        Integer,
-        nullable=True,
-    )
+
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+
+    order_index = Column(Integer, default=0, nullable=False)
+
+    lesson_type = Column(lesson_type_enum, nullable=False)
+    difficulty = Column(difficulty_level_enum, nullable=False)
+
+    estimated_minutes = Column(Integer)
+
     created_at = Column(
         TIMESTAMP(timezone=True),
         server_default=text("now()"),
         nullable=False,
+    )
+
+    # RELATIONSHIPS
+    subtopic = relationship("Subtopic", back_populates="lessons")
+
+    contents = relationship(
+        "LessonContent",
+        back_populates="lesson",
+        cascade="all, delete-orphan",
+    )
+
+    visuals = relationship(
+        "InteractiveLessonVisual",
+        back_populates="lesson",
+        cascade="all, delete-orphan",
+    )
+
+    # CONSTRAINTS + INDEXES
+    __table_args__ = (
+        UniqueConstraint("subtopic_id", "order_index", name="uq_lesson_order"),
+        Index("idx_lesson_subtopic", "subtopic_id"),
+        Index("idx_lesson_type", "lesson_type"),
+        Index("idx_lesson_difficulty", "difficulty"),
     )
 
 
@@ -248,21 +230,15 @@ class InteractiveLessonVisual(Base):
         nullable=False,
     )
 
-    object_type = Column(
-        String(255),
-        nullable=False,
-    )
+    object_type = Column(String(255), nullable=False)
+    object_count = Column(Integer, default=0, nullable=False)
+    interaction_type = Column(String(255))
 
-    object_count = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
+    # RELATIONSHIPS
+    lesson = relationship("Lesson", back_populates="visuals")
 
-    interaction_type = Column(
-        String(255),
-        nullable=True,
-    )
+    # INDEXES
+    __table_args__ = (Index("idx_visual_lesson", "lesson_id"),)
 
 
 class LessonContent(Base):
@@ -300,18 +276,17 @@ class LessonContent(Base):
         nullable=False,
     )
 
-    content_type = Column(
-        Enum(LessonType),
-        nullable=False,
-    )
+    content_type = Column(lesson_type_enum, nullable=False)
 
-    content_data = Column(
-        JSONB,
-        nullable=False,
-    )
+    content_data = Column(JSONB, nullable=False)
 
-    order_index = Column(
-        Integer,
-        default=0,
-        nullable=False,
+    order_index = Column(Integer, default=0, nullable=False)
+
+    # RELATIONSHIPS
+    lesson = relationship("Lesson", back_populates="contents")
+
+    # CONSTRAINTS + INDEXES
+    __table_args__ = (
+        UniqueConstraint("lesson_id", "order_index", name="uq_lesson_content_order"),
+        Index("idx_content_lesson", "lesson_id"),
     )
